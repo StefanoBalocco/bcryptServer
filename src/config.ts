@@ -10,8 +10,5 @@ export const config = {
 		logpath: './log',
 		minWorkers: workers,
 		maxWorkers: workers
-	},
-	BCRYPT: {
-		rounds: 10
 	}
 };

@@ -11,8 +11,5 @@ exports.config = {
         logpath: './log',
         minWorkers: workers,
         maxWorkers: workers
-    },
-    BCRYPT: {
-        rounds: 10
     }
 };
