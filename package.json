@@ -1,0 +1,40 @@
+{
+  "name": "bcryptServer",
+  "description": "bcrypt microservice",
+  "main": "backend/dist/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StefanoBalocco/bcryptServer.git"
+  },
+  "version": "1.0",
+  "keywords": [
+    "bcrypt",
+    "microservice"
+  ],
+  "author": "Stefano Balocco <stefano.balocco@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/StefanoBalocco/bcryptServer/issues"
+  },
+  "homepage": "https://github.com/StefanoBalocco/bcryptServer",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "koa": "^2.13.1",
+    "koa-body": "^4.2.0",
+    "koa-router": "^10.0.0",
+    "logbro": "^2.0.1",
+    "workerpool": "^6.1.4"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.1",
+    "@types/koa": "^2.13.1",
+    "@types/koa-router": "^7.4.1",
+    "@types/node": "~12",
+    "@types/workerpool": "^6.0.0",
+    "typescript": "~4"
+  },
+  "scripts": {
+    "build": "node_modules/typescript/bin/tsc",
+    "start": "/usr/bin/env node dist/main.js"
+  }
+}
