@@ -1,5 +1,5 @@
 {
-  "name": "bcryptServer",
+  "name": "bcryptserver",
   "description": "bcrypt microservice",
   "main": "backend/dist/main.js",
   "repository": {
