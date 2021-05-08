@@ -6,7 +6,7 @@
     "type": "git",
     "url": "https://github.com/StefanoBalocco/bcryptServer.git"
   },
-  "version": "1.1.1",
+  "version": "1.1.2",
   "keywords": [
     "bcrypt",
     "microservice"

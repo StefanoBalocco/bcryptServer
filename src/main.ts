@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { createWriteStream, readFile } from 'fs';
 import * as https from 'https';
 import * as Koa from 'koa';
