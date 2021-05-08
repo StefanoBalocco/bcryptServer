@@ -1,8 +1,10 @@
-import { createWriteStream } from 'fs';
+import { createWriteStream, readFile } from 'fs';
+import * as https from 'https';
 import * as Koa from 'koa';
 import * as KoaBody from 'koa-body';
 import * as KoaRouter from 'koa-router';
 import * as path from 'path';
+import { promisify } from 'util';
 import { Backend } from './Backend';
 import { config } from './config';
 
@@ -28,9 +30,25 @@ async function main() {
 	router.post( '/hash/:rounds', KoaBody(), async( ctx, next ) => backend.hash( ctx, next ) );
 	app.use( router.routes() );
 	app.use( router.allowedMethods() );
-	app.listen( config.APP.port, config.APP.ip, function() {
-		logger.info( 'bcrypt server v' + version + ' started' );
-	} );
+	if( config.HTTPS.key && config.HTTPS.certificate ) {
+		const [ certificate, error ] = await Backend.result<Buffer, Error>( promisify( readFile )( config.HTTPS.certificate ) );
+		if( certificate ) {
+			const [ key, error ] = await Backend.result<Buffer, Error>( promisify( readFile )( config.HTTPS.key ) );
+			if( key ) {
+				https.createServer( { cert: certificate, key: key }, app.callback() ).listen( config.APP.port, config.APP.ip, function() {
+					logger.info( 'bcrypt server v' + version + ' started' );
+				} );
+			} else {
+				logger.error( 'key not found' + ( !error ?? ': ' + error.message ) );
+			}
+		} else {
+			logger.error( 'certificate not found' + ( !error ?? ': ' + error.message ) );
+		}
+	} else {
+		app.listen( config.APP.port, config.APP.ip, function() {
+			logger.info( 'bcrypt server v' + version + ' started' );
+		} );
+	}
 }
 
 main();

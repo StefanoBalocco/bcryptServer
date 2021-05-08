@@ -10,5 +10,9 @@ export const config = {
 		logpath: './log',
 		minWorkers: workers,
 		maxWorkers: workers
+	},
+	HTTPS: {
+		certificate: undefined,
+		key: undefined
 	}
 };
