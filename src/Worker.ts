@@ -4,6 +4,7 @@ import * as path from 'path';
 import { threadId } from 'worker_threads';
 import * as workerpool from 'workerpool';
 import { config } from './config';
+import { Utilities } from './Utilities';
 
 function LogOpenStream() {
 	logger.stdout = createWriteStream( path.join( config.APP.logpath, 'worker.default.' + threadId + '.log' ), { flags: 'a' } );
@@ -17,18 +18,12 @@ const logger = require( 'logbro' );
 LogOpenStream();
 process.on( 'SIGHUP', LogOpenStream );
 
-function Result<M, N>( promise: Promise<M> ): Promise<[ M, N ]> {
-	return promise
-		.then( ( result: M ): [ M, N ] => ( [ result, undefined ] ) )
-		.catch( ( error: N ): [ M, N ] => ( [ undefined, error ] ) );
-}
-
 async function Compare( data: string, hash: string ) {
 	let error;
 	let returnValue: { result?: boolean, error?: string } = {};
 	if( data && ( 'string' === typeof data ) ) {
 		if( hash && ( 'string' === typeof hash ) ) {
-			const [ resultBcrypt, errorBcrypt ] = await Result<boolean, Error>( bcrypt.compare( data, hash ) );
+			const [ resultBcrypt, errorBcrypt ] = await Utilities.result<boolean, Error>( bcrypt.compare( data, hash ) );
 			if( 'undefined' !== typeof resultBcrypt ) {
 				returnValue.result = resultBcrypt;
 			} else {
@@ -54,7 +49,7 @@ async function Hash( data: string, rounds: number ) {
 	let returnValue: { result?: string, error?: string } = {};
 	if( data && ( 'string' === typeof data ) ) {
 		if( rounds && Number.isInteger( rounds ) ) {
-			const [ resultBcrypt, errorBcrypt ] = await Result<string, Error>( bcrypt.hash( data, rounds ) );
+			const [ resultBcrypt, errorBcrypt ] = await Utilities.result<string, Error>( bcrypt.hash( data, rounds ) );
 			if( 'undefined' !== typeof resultBcrypt ) {
 				returnValue.result = resultBcrypt;
 			} else {

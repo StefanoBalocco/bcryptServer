@@ -4,6 +4,7 @@ exports.Backend = void 0;
 const path = require("path");
 const workerpool = require("workerpool");
 const config_1 = require("./config");
+const Utilities_1 = require("./Utilities");
 const { Logbro } = require('logbro');
 Logbro.level = 'info';
 const logger = require('logbro');
@@ -11,18 +12,13 @@ class Backend {
     constructor() {
         this.workerPool = workerpool.pool(path.join(__dirname, 'Worker.js'), { minWorkers: config_1.config.APP.minWorkers, maxWorkers: config_1.config.APP.maxWorkers });
     }
-    static result(promise) {
-        return promise
-            .then((result) => ([result, undefined]))
-            .catch((error) => ([undefined, error]));
-    }
     async compare(context, next) {
         var _a;
         let error;
         let returnValue = {};
         if ((_a = context.request.body) === null || _a === void 0 ? void 0 : _a.data) {
             if (context.request.body.hash) {
-                const [workerOutput, errorWorkerOutput] = await Backend.result(this.workerPool.exec('compare', [context.request.body.data, context.request.body.hash]));
+                const [workerOutput, errorWorkerOutput] = await Utilities_1.Utilities.result(this.workerPool.exec('compare', [context.request.body.data, context.request.body.hash]));
                 if (workerOutput && !workerOutput.error) {
                     returnValue.result = workerOutput.result;
                 }
@@ -58,7 +54,7 @@ class Backend {
             if ((_b = context.params) === null || _b === void 0 ? void 0 : _b.rounds) {
                 let rounds = parseInt(context.params.rounds);
                 if (!Number.isNaN(rounds) && 0 < rounds) {
-                    const [workerOutput, errorWorkerOutput] = await Backend.result(this.workerPool.exec('hash', [context.request.body.data, rounds]));
+                    const [workerOutput, errorWorkerOutput] = await Utilities_1.Utilities.result(this.workerPool.exec('hash', [context.request.body.data, rounds]));
                     if (workerOutput && !workerOutput.error) {
                         returnValue.result = workerOutput.result;
                     }

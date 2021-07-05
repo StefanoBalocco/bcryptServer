@@ -3,18 +3,13 @@ import { RouterContext } from 'koa-router';
 import * as path from 'path';
 import * as workerpool from 'workerpool';
 import { config } from './config';
+import { Utilities } from './Utilities';
 
 const { Logbro } = require( 'logbro' );
 Logbro.level = 'info';
 const logger = require( 'logbro' );
 
 export class Backend {
-	static result<M, N>( promise: Promise<M> ): Promise<[ M, N ]> {
-		return promise
-			.then( ( result: M ): [ M, N ] => ( [ result, undefined ] ) )
-			.catch( ( error: N ): [ M, N ] => ( [ undefined, error ] ) );
-	}
-
 	private workerPool = workerpool.pool( path.join( __dirname, 'Worker.js' ), { minWorkers: config.APP.minWorkers, maxWorkers: config.APP.maxWorkers } );
 
 	constructor() {
@@ -25,7 +20,7 @@ export class Backend {
 		let returnValue: { error?: string, result?: boolean } = {};
 		if( context.request.body?.data ) {
 			if( context.request.body.hash ) {
-				const [ workerOutput, errorWorkerOutput ]: [ { result?: boolean, error?: string }, Error ] = await Backend.result<{ result?: boolean, error?: string }, Error>( <Promise<{ result?: boolean, error?: string }>> <unknown> this.workerPool.exec( 'compare', [ context.request.body.data, context.request.body.hash ] ) );
+				const [ workerOutput, errorWorkerOutput ]: [ { result?: boolean, error?: string }, Error ] = await Utilities.result<{ result?: boolean, error?: string }, Error>( <Promise<{ result?: boolean, error?: string }>> <unknown> this.workerPool.exec( 'compare', [ context.request.body.data, context.request.body.hash ] ) );
 				if( workerOutput && !workerOutput.error ) {
 					returnValue.result = workerOutput.result;
 				} else {
@@ -57,7 +52,7 @@ export class Backend {
 			if( context.params?.rounds ) {
 				let rounds = parseInt( context.params.rounds );
 				if( !Number.isNaN( rounds ) && 0 < rounds ) {
-					const [ workerOutput, errorWorkerOutput ]: [ { result?: string, error?: string }, Error ] = await Backend.result<{ result?: string, error?: string }, Error>( <Promise<{ result?: string, error?: string }>> <unknown> this.workerPool.exec( 'hash', [ context.request.body.data, rounds ] ) );
+					const [ workerOutput, errorWorkerOutput ]: [ { result?: string, error?: string }, Error ] = await Utilities.result<{ result?: string, error?: string }, Error>( <Promise<{ result?: string, error?: string }>> <unknown> this.workerPool.exec( 'hash', [ context.request.body.data, rounds ] ) );
 					if( workerOutput && !workerOutput.error ) {
 						returnValue.result = workerOutput.result;
 					} else {

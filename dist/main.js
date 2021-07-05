@@ -10,6 +10,7 @@ const path = require("path");
 const util_1 = require("util");
 const Backend_1 = require("./Backend");
 const config_1 = require("./config");
+const Utilities_1 = require("./Utilities");
 const version = require('../package.json').version;
 function LogOpenStream() {
     logger.stdout = fs_1.createWriteStream(path.join(config_1.config.APP.logpath, 'default.log'), { flags: 'a' });
@@ -31,9 +32,9 @@ async function main() {
     app.use(router.routes());
     app.use(router.allowedMethods());
     if (config_1.config.HTTPS.key && config_1.config.HTTPS.certificate) {
-        const [certificate, error] = await Backend_1.Backend.result(util_1.promisify(fs_1.readFile)(config_1.config.HTTPS.certificate));
+        const [certificate, error] = await Utilities_1.Utilities.result(util_1.promisify(fs_1.readFile)(config_1.config.HTTPS.certificate));
         if (certificate) {
-            const [key, error] = await Backend_1.Backend.result(util_1.promisify(fs_1.readFile)(config_1.config.HTTPS.key));
+            const [key, error] = await Utilities_1.Utilities.result(util_1.promisify(fs_1.readFile)(config_1.config.HTTPS.key));
             if (key) {
                 https.createServer({ cert: certificate, key: key }, app.callback()).listen(config_1.config.APP.port, config_1.config.APP.ip, function () {
                     logger.info('bcrypt server v' + version + ' started');

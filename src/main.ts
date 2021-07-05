@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { createWriteStream, readFile } from 'fs';
 import * as https from 'https';
 import * as Koa from 'koa';
@@ -9,6 +8,7 @@ import * as path from 'path';
 import { promisify } from 'util';
 import { Backend } from './Backend';
 import { config } from './config';
+import { Utilities } from './Utilities';
 
 const version = require( '../package.json' ).version;
 
@@ -33,9 +33,9 @@ async function main() {
 	app.use( router.routes() );
 	app.use( router.allowedMethods() );
 	if( config.HTTPS.key && config.HTTPS.certificate ) {
-		const [ certificate, error ] = await Backend.result<Buffer, Error>( promisify( readFile )( config.HTTPS.certificate ) );
+		const [ certificate, error ] = await Utilities.result<Buffer, Error>( promisify( readFile )( config.HTTPS.certificate ) );
 		if( certificate ) {
-			const [ key, error ] = await Backend.result<Buffer, Error>( promisify( readFile )( config.HTTPS.key ) );
+			const [ key, error ] = await Utilities.result<Buffer, Error>( promisify( readFile )( config.HTTPS.key ) );
 			if( key ) {
 				https.createServer( { cert: certificate, key: key }, app.callback() ).listen( config.APP.port, config.APP.ip, function() {
 					logger.info( 'bcrypt server v' + version + ' started' );
