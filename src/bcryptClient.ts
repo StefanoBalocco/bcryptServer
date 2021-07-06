@@ -13,7 +13,7 @@ export class bcryptClient {
 		rejectUnauthorized: true
 	};
 
-	constructor( baseUrl: string, cacert: Buffer = undefined, silentFallback = true ) {
+	public constructor( baseUrl: string, cacert: Buffer = undefined, silentFallback = true ) {
 		this.baseUrl = baseUrl;
 		if( cacert ) {
 			this.options.ca = cacert;
@@ -21,12 +21,12 @@ export class bcryptClient {
 		this.silentFallback = silentFallback;
 	}
 
-	public async Hash( data: string, rounds: number ) {
+	public async hash( data: string, rounds: number ) {
 		let error: Error;
 		let returnValue = undefined;
 		const [ response, errorNeedle ] = await Utilities.result<needle.NeedleResponse, Error>( needle(
 			'post',
-			this.baseUrl + '/Hash/' + rounds,
+			this.baseUrl + '/hash/' + rounds,
 			{
 				data: data
 			}
@@ -64,12 +64,12 @@ export class bcryptClient {
 		return returnValue;
 	}
 
-	public async Compare( data: string, hash: string ) {
+	public async compare( data: string, hash: string ) {
 		let error: Error;
 		let returnValue: boolean = false;
 		const [ response, errorNeedle ] = await Utilities.result<needle.NeedleResponse, Error>( needle(
 			'post',
-			this.baseUrl + '/Compare',
+			this.baseUrl + '/compare',
 			{
 				data: data,
 				hash: hash

@@ -2,11 +2,12 @@
   "name": "bcryptserver",
   "description": "bcrypt microservice",
   "main": "dist/bcryptClient.js",
+  "types": "bcryptClient.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/StefanoBalocco/bcryptServer.git"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "keywords": [
     "bcrypt",
     "microservice"

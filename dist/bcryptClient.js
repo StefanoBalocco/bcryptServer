@@ -19,10 +19,10 @@ class bcryptClient {
         }
         this.silentFallback = silentFallback;
     }
-    async Hash(data, rounds) {
+    async hash(data, rounds) {
         let error;
         let returnValue = undefined;
-        const [response, errorNeedle] = await Utilities_1.Utilities.result(needle('post', this.baseUrl + '/Hash/' + rounds, {
+        const [response, errorNeedle] = await Utilities_1.Utilities.result(needle('post', this.baseUrl + '/hash/' + rounds, {
             data: data
         }));
         if ((200 === (response === null || response === void 0 ? void 0 : response.statusCode)) && ('undefined' === typeof response.body.result)) {
@@ -62,10 +62,10 @@ class bcryptClient {
         }
         return returnValue;
     }
-    async Compare(data, hash) {
+    async compare(data, hash) {
         let error;
         let returnValue = false;
-        const [response, errorNeedle] = await Utilities_1.Utilities.result(needle('post', this.baseUrl + '/Compare', {
+        const [response, errorNeedle] = await Utilities_1.Utilities.result(needle('post', this.baseUrl + '/compare', {
             data: data,
             hash: hash
         }));
