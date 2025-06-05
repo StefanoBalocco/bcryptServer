@@ -23,15 +23,6 @@ class bcryptServer {
             minWorkers: this._config.minWorkers,
             maxWorkers: config.maxWorkers
         });
-        this._app.use('*', async (context, next) => {
-            try {
-                return await next();
-            }
-            catch (error) {
-                _logger.log(ZeptoLogger.LogLevel.ERROR, 'Error while processing a request' + ((error instanceof Error) ? ': ' + error.message : ''));
-                return context.json({ error: 'Internal server error' }, 500);
-            }
-        });
         this._app.notFound((context) => {
             _logger.log(ZeptoLogger.LogLevel.ERROR, '404 Not found: ' + context.req.url);
             return context.json({ error: 'Not found' }, 404);
@@ -172,6 +163,5 @@ try {
 }
 catch (error) {
     _logger.log(ZeptoLogger.LogLevel.CRITICAL, 'exception while starting the server: ' + (error instanceof Error ? error.message : error));
-    console.log('errore');
     process.exit(1);
 }

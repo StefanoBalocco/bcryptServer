@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/StefanoBalocco/bcryptServer.git"
   },
-  "version": "2.0.0",
+  "version": "2.0.1",
   "keywords": [
     "bcrypt",
     "microservice"
@@ -35,7 +35,7 @@
     "typescript": "~5.8.3"
   },
   "scripts": {
-    "build": "node_modules/typescript/bin/tsc",
+    "build": "node_modules/typescript/bin/tsc && node_modules/typescript/bin/tsc -p tsconfig-declarations.json",
     "start": "/usr/bin/env node dist/bcryptServer.js"
   },
   "bin": "dist/bcryptServer.js"

@@ -10,7 +10,7 @@ interface bcryptResponse<T> {
 	result?: T;
 }
 
-export class bcryptClient {
+export default class bcryptClient {
 	private readonly _baseUrl: string;
 	private _workerPool: Undefinedable<workerpool.Pool>;
 	private _agent: Agent;
