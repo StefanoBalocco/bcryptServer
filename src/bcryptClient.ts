@@ -1,110 +1,109 @@
-import * as bcrypt from 'bcrypt';
-import * as needle from 'needle';
-import { Utilities } from './Utilities';
+import path from 'path';
+import { Agent, Dispatcher, request } from 'undici';
+import workerpool from 'workerpool';
+
+type Undefinedable<T> = T | undefined;
+
+interface bcryptResponse<T> {
+	error?: string;
+	result?: T;
+}
 
 export class bcryptClient {
-	private silentFallback: boolean;
-	private baseUrl: string;
-	private options: needle.NeedleOptions = {
-		compressed: true,
-		follow_max: 0,
-		open_timeout: 2000,
-		response_timeout: 5000,
-		rejectUnauthorized: true
-	};
+	private readonly _baseUrl: string;
+	private _workerPool: Undefinedable<workerpool.Pool>;
+	private _agent: Agent;
+	private _rounds: number;
 
-	public constructor( baseUrl: string, cacert: Buffer = undefined, silentFallback = true ) {
-		this.baseUrl = baseUrl;
-		if( cacert ) {
-			this.options.ca = cacert;
+	public constructor( baseUrl: string, cacert: Undefinedable<Buffer> = undefined, maxConcurrencyFallback: number = 2, rounds: number = 12 ) {
+		this._baseUrl = baseUrl;
+		this._rounds = rounds;
+		const agentOptions: Agent.Options = {
+			connectTimeout: 2000,
+			headersTimeout: 5000,
+			bodyTimeout: 5000,
+			keepAliveTimeout: 4000,
+			keepAliveMaxTimeout: 10000,
+			maxRedirections: 0, // equivalente a follow_max: 0
+			connect: {
+				ca: cacert,
+				rejectUnauthorized: true
+			}
+		};
+		this._agent = new Agent( agentOptions );
+		if( 0 < maxConcurrencyFallback ) {
+			this._workerPool = workerpool.pool(
+				path.join( __dirname, 'Worker.js' ), {
+					minWorkers: 0,
+					maxWorkers: maxConcurrencyFallback,
+					workerType: 'thread' // usa worker threads invece di processi
+				}
+			);
 		}
-		this.silentFallback = silentFallback;
 	}
 
-	public async hash( data: string, rounds: number ) {
-		let error: Error;
-		let returnValue = undefined;
-		const [ response, errorNeedle ] = await Utilities.result<needle.NeedleResponse, Error>( needle(
-			'post',
-			this.baseUrl + '/hash/' + rounds,
-			{
-				data: data
-			}
-		) );
-		if( ( 200 === response?.statusCode ) && ( 'undefined' === typeof response.body.result ) ) {
-			returnValue = response.body.result;
-		} else {
-			if( this.silentFallback ) {
-				let errorBcrypt;
-				[ returnValue, errorBcrypt ] = await Utilities.result<string, Error>( bcrypt.hash( data, rounds ) );
-				if( 'undefined' === typeof returnValue ) {
-					error = errorBcrypt ?? new Error( 'undefined' );
+	public async hash( data: string, rounds: Undefinedable<number> ): Promise<bcryptResponse<string>> {
+		let returnValue: bcryptResponse<string> = {};
+		try {
+			const response: Dispatcher.ResponseData = await request(
+				this._baseUrl + '/hash', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept-Encoding': 'gzip, deflate' // equivalente a compressed: true
+					},
+					body: JSON.stringify( { data: data, rounds: ( rounds ?? this._rounds ) } ),
+					dispatcher: this._agent
 				}
-			} else {
-				if( errorNeedle ) {
-					error = errorNeedle;
-				} else {
-					error = new Error( 'error while parsing response' );
-					if( !response ) {
-						error = new Error( 'no response' );
-					} else if( 200 != response.statusCode ) {
-						error = new Error( 'errorcode ' + response.statusCode );
-					} else if( 'undefined' === typeof response.body.result ) {
-						error = new Error( 'no result' );
-					}
-					if( response.body.error ) {
-						error = new Error( response.body.error );
-					}
-				}
-			}
+			);
+			returnValue = await response.body.json() as bcryptResponse<string>;
+		} catch( error ) {
+			returnValue.error = error instanceof Error ? error.message : 'unknown error';
 		}
-		if( error ) {
-			throw error;
+		if( returnValue.error && this._workerPool ) {
+			returnValue = {};
+			try {
+				returnValue.result = await this._workerPool.exec( 'hash', [ data, rounds ] ) as string;
+			} catch( error ) {
+				returnValue.error = error instanceof Error ? error.message : 'unknown error';
+			}
 		}
 		return returnValue;
 	}
 
-	public async compare( data: string, hash: string ) {
-		let error: Error;
-		let returnValue: boolean = false;
-		const [ response, errorNeedle ] = await Utilities.result<needle.NeedleResponse, Error>( needle(
-			'post',
-			this.baseUrl + '/compare',
-			{
-				data: data,
-				hash: hash
-			}
-		) );
-		if( ( 200 === response?.statusCode ) && ( 'undefined' === typeof response.body.result ) ) {
-			returnValue = response.body.result;
-		} else {
-			if( this.silentFallback ) {
-				let errorBcrypt;
-				[ returnValue, errorBcrypt ] = await Utilities.result<boolean, Error>( bcrypt.compare( data, hash ) );
-				if( 'undefined' === typeof returnValue ) {
-					error = errorBcrypt ?? new Error( 'undefined' );
+	public async compare( data: string, hash: string ): Promise<bcryptResponse<boolean>> {
+		let returnValue: bcryptResponse<boolean> = {};
+		try {
+			const response: Dispatcher.ResponseData = await request(
+				this._baseUrl + '/compare', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept-Encoding': 'gzip, deflate' // equivalente a compressed: true
+					},
+					body: JSON.stringify( { data: data, hash: hash } ),
+					dispatcher: this._agent
 				}
-			} else {
-				if( errorNeedle ) {
-					error = errorNeedle;
-				} else {
-					error = new Error( 'error while parsing response' );
-					if( !response ) {
-						error = new Error( 'no response' );
-					} else if( 200 != response.statusCode ) {
-						error = new Error( 'errorcode ' + response.statusCode );
-					} else if( 'undefined' === typeof response.body.result ) {
-						error = new Error( 'no result' );
-					}
-					if( response.body.error ) {
-						error = new Error( response.body.error );
-					}
-				}
-			}
+			);
+			returnValue = await response.body.json() as bcryptResponse<boolean>;
+		} catch( error ) {
+			returnValue.error = error instanceof Error ? error.message : 'unknown error';
 		}
-		if( error ) {
-			throw error;
+		if( returnValue.error && this._workerPool ) {
+			returnValue = {};
+			try {
+				returnValue.result = await this._workerPool.exec( 'compare', [ data, hash ] ) as boolean;
+			} catch( error ) {
+				returnValue.error = error instanceof Error ? error.message : 'unknown error';
+			}
 		}
 		return returnValue;
+	}
+
+	public async destroy(): Promise<void> {
+		if( this._workerPool ) {
+			await this._workerPool.terminate();
+		}
+		await this._agent.destroy();
 	}
 }

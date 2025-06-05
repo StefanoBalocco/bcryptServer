@@ -1,4 +1,5 @@
 .gitattributes
 .idea
 node_modules
-yarn.lock
+pnpm-lock.yaml
+log/*

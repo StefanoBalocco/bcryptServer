@@ -1,76 +1,38 @@
-import * as bcrypt from 'bcrypt';
-import { createWriteStream } from 'fs';
-import * as path from 'path';
-import { threadId } from 'worker_threads';
-import * as workerpool from 'workerpool';
-import { config } from './config';
-import { Utilities } from './Utilities';
+import bcrypt from 'bcrypt';
+import workerpool from 'workerpool';
 
-function LogOpenStream() {
-	logger.stdout = createWriteStream( path.join( config.APP.logpath, 'worker.default.' + threadId + '.log' ), { flags: 'a' } );
-	logger.stderr = createWriteStream( path.join( config.APP.logpath, 'worker.error.' + threadId + '.log' ), { flags: 'a' } );
-	logger.info( 'Log file opened' );
-}
-
-const { Logbro } = require( 'logbro' );
-Logbro.level = 'info';
-const logger = require( 'logbro' );
-LogOpenStream();
-process.on( 'SIGHUP', LogOpenStream );
-
-async function Compare( data: string, hash: string ) {
-	let error;
-	let returnValue: { result?: boolean, error?: string } = {};
-	if( data && ( 'string' === typeof data ) ) {
-		if( hash && ( 'string' === typeof hash ) ) {
-			const [ resultBcrypt, errorBcrypt ] = await Utilities.result<boolean, Error>( bcrypt.compare( data, hash ) );
-			if( 'undefined' !== typeof resultBcrypt ) {
-				returnValue.result = resultBcrypt;
-			} else {
-				error = 'no result';
-				if( errorBcrypt ) {
-					logger.error( errorBcrypt );
-				}
-			}
+async function compare( data: string, hash: string ): Promise<boolean> {
+	let returnValue: boolean = false;
+	if( data && ( 0 < data.length ) && ( 72 >= data.length ) ) {
+		if( hash ) {
+			returnValue = await bcrypt.compare( data, hash );
 		} else {
-			error = 'compare: missing or invalid hash';
+			throw new Error( 'Compare: missing or invalid hash' );
 		}
 	} else {
-		error = 'compare: missing or invalid data';
-	}
-	if( error ) {
-		returnValue.error = error;
+		throw new Error( 'Worker.hash: missing, invalid or too much data' );
 	}
 	return returnValue;
 }
 
-async function Hash( data: string, rounds: number ) {
-	let error;
-	let returnValue: { result?: string, error?: string } = {};
-	if( data && ( 'string' === typeof data ) ) {
-		if( rounds && Number.isInteger( rounds ) ) {
-			const [ resultBcrypt, errorBcrypt ] = await Utilities.result<string, Error>( bcrypt.hash( data, rounds ) );
-			if( 'undefined' !== typeof resultBcrypt ) {
-				returnValue.result = resultBcrypt;
-			} else {
-				error = 'no result';
-				if( errorBcrypt ) {
-					logger.error( errorBcrypt );
-				}
+async function hash( data: string, rounds: number ): Promise<string> {
+	let returnValue: string;
+	if( data && ( 0 < data.length ) && ( 72 >= data.length ) ) {
+		if( rounds && Number.isInteger( rounds ) && 9 < rounds && 20 > rounds ) {
+			returnValue = await bcrypt.hash( data, rounds );
+			if( ( 59 > returnValue.length ) || ( 60 < returnValue.length ) ) {
+				throw new Error( 'Worker.hash: wrong result (' + returnValue + ')' );
 			}
 		} else {
-			error = 'compare: missing or invalid rounds';
+			throw new Error( 'Worker.hash: missing, invalid or low number of rounds' );
 		}
 	} else {
-		error = 'compare: missing or invalid data';
-	}
-	if( error ) {
-		returnValue.error = error;
+		throw new Error( 'Worker.hash: missing, invalid or too much data' );
 	}
 	return returnValue;
 }
 
 workerpool.worker( {
-	compare: Compare,
-	hash: Hash
+	compare: compare,
+	hash: hash
 } );

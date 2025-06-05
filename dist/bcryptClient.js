@@ -1,110 +1,95 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.bcryptClient = void 0;
-const bcrypt = require("bcrypt");
-const needle = require("needle");
-const Utilities_1 = require("./Utilities");
-class bcryptClient {
-    constructor(baseUrl, cacert = undefined, silentFallback = true) {
-        this.options = {
-            compressed: true,
-            follow_max: 0,
-            open_timeout: 2000,
-            response_timeout: 5000,
-            rejectUnauthorized: true
+import path from 'path';
+import { Agent, request } from 'undici';
+import workerpool from 'workerpool';
+export class bcryptClient {
+    _baseUrl;
+    _workerPool;
+    _agent;
+    _rounds;
+    constructor(baseUrl, cacert = undefined, maxConcurrencyFallback = 2, rounds = 12) {
+        this._baseUrl = baseUrl;
+        this._rounds = rounds;
+        const agentOptions = {
+            connectTimeout: 2000,
+            headersTimeout: 5000,
+            bodyTimeout: 5000,
+            keepAliveTimeout: 4000,
+            keepAliveMaxTimeout: 10000,
+            maxRedirections: 0,
+            connect: {
+                ca: cacert,
+                rejectUnauthorized: true
+            }
         };
-        this.baseUrl = baseUrl;
-        if (cacert) {
-            this.options.ca = cacert;
+        this._agent = new Agent(agentOptions);
+        if (0 < maxConcurrencyFallback) {
+            this._workerPool = workerpool.pool(path.join(__dirname, 'Worker.js'), {
+                minWorkers: 0,
+                maxWorkers: maxConcurrencyFallback,
+                workerType: 'thread'
+            });
         }
-        this.silentFallback = silentFallback;
     }
     async hash(data, rounds) {
-        let error;
-        let returnValue = undefined;
-        const [response, errorNeedle] = await Utilities_1.Utilities.result(needle('post', this.baseUrl + '/hash/' + rounds, {
-            data: data
-        }));
-        if ((200 === (response === null || response === void 0 ? void 0 : response.statusCode)) && ('undefined' === typeof response.body.result)) {
-            returnValue = response.body.result;
+        let returnValue = {};
+        try {
+            const response = await request(this._baseUrl + '/hash', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept-Encoding': 'gzip, deflate'
+                },
+                body: JSON.stringify({ data: data, rounds: (rounds ?? this._rounds) }),
+                dispatcher: this._agent
+            });
+            returnValue = await response.body.json();
         }
-        else {
-            if (this.silentFallback) {
-                let errorBcrypt;
-                [returnValue, errorBcrypt] = await Utilities_1.Utilities.result(bcrypt.hash(data, rounds));
-                if ('undefined' === typeof returnValue) {
-                    error = errorBcrypt !== null && errorBcrypt !== void 0 ? errorBcrypt : new Error('undefined');
-                }
-            }
-            else {
-                if (errorNeedle) {
-                    error = errorNeedle;
-                }
-                else {
-                    error = new Error('error while parsing response');
-                    if (!response) {
-                        error = new Error('no response');
-                    }
-                    else if (200 != response.statusCode) {
-                        error = new Error('errorcode ' + response.statusCode);
-                    }
-                    else if ('undefined' === typeof response.body.result) {
-                        error = new Error('no result');
-                    }
-                    if (response.body.error) {
-                        error = new Error(response.body.error);
-                    }
-                }
-            }
+        catch (error) {
+            returnValue.error = error instanceof Error ? error.message : 'unknown error';
         }
-        if (error) {
-            throw error;
+        if (returnValue.error && this._workerPool) {
+            returnValue = {};
+            try {
+                returnValue.result = await this._workerPool.exec('hash', [data, rounds]);
+            }
+            catch (error) {
+                returnValue.error = error instanceof Error ? error.message : 'unknown error';
+            }
         }
         return returnValue;
     }
     async compare(data, hash) {
-        let error;
-        let returnValue = false;
-        const [response, errorNeedle] = await Utilities_1.Utilities.result(needle('post', this.baseUrl + '/compare', {
-            data: data,
-            hash: hash
-        }));
-        if ((200 === (response === null || response === void 0 ? void 0 : response.statusCode)) && ('undefined' === typeof response.body.result)) {
-            returnValue = response.body.result;
+        let returnValue = {};
+        try {
+            const response = await request(this._baseUrl + '/compare', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept-Encoding': 'gzip, deflate'
+                },
+                body: JSON.stringify({ data: data, hash: hash }),
+                dispatcher: this._agent
+            });
+            returnValue = await response.body.json();
         }
-        else {
-            if (this.silentFallback) {
-                let errorBcrypt;
-                [returnValue, errorBcrypt] = await Utilities_1.Utilities.result(bcrypt.compare(data, hash));
-                if ('undefined' === typeof returnValue) {
-                    error = errorBcrypt !== null && errorBcrypt !== void 0 ? errorBcrypt : new Error('undefined');
-                }
-            }
-            else {
-                if (errorNeedle) {
-                    error = errorNeedle;
-                }
-                else {
-                    error = new Error('error while parsing response');
-                    if (!response) {
-                        error = new Error('no response');
-                    }
-                    else if (200 != response.statusCode) {
-                        error = new Error('errorcode ' + response.statusCode);
-                    }
-                    else if ('undefined' === typeof response.body.result) {
-                        error = new Error('no result');
-                    }
-                    if (response.body.error) {
-                        error = new Error(response.body.error);
-                    }
-                }
-            }
+        catch (error) {
+            returnValue.error = error instanceof Error ? error.message : 'unknown error';
         }
-        if (error) {
-            throw error;
+        if (returnValue.error && this._workerPool) {
+            returnValue = {};
+            try {
+                returnValue.result = await this._workerPool.exec('compare', [data, hash]);
+            }
+            catch (error) {
+                returnValue.error = error instanceof Error ? error.message : 'unknown error';
+            }
         }
         return returnValue;
     }
+    async destroy() {
+        if (this._workerPool) {
+            await this._workerPool.terminate();
+        }
+        await this._agent.destroy();
+    }
 }
-exports.bcryptClient = bcryptClient;

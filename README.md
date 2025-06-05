@@ -5,9 +5,9 @@ A microservice that expose a bcrypt API server, to separate computational expens
 It expose two api command:
 
 ### HASH
-POST `/hash/[rounds]`
+POST `/hash`
 
-Must receive, in json format, a field named `data` that will be hashed. Round must be a number, indicating the salting rounds.
+Must receive, in json format, a field named `data` that will be hashed and a field named `rounds` with the number of the salting rounds.
 
 It return a json containg a result field with the hash or an error field contain the text description of the error.
 

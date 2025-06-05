@@ -2,12 +2,13 @@
   "name": "bcryptserver",
   "description": "bcrypt microservice",
   "main": "dist/bcryptClient.js",
-  "types": "bcryptClient.d.ts",
+  "types": "dist/bcryptClient.d.ts",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/StefanoBalocco/bcryptServer.git"
   },
-  "version": "1.2.1",
+  "version": "2.0.0",
   "keywords": [
     "bcrypt",
     "microservice"
@@ -19,26 +20,23 @@
   },
   "homepage": "https://github.com/StefanoBalocco/bcryptServer",
   "dependencies": {
-    "bcrypt": "^5.0.1",
-    "koa": "^2.13.1",
-    "koa-body": "^4.2.0",
-    "koa-router": "^10.0.0",
-    "logbro": "^2.0.1",
-    "needle": "^2.6.0",
-    "workerpool": "^6.1.4"
+    "@hono/node-server": "^1.14.3",
+    "bcrypt": "^5.1.1",
+    "hono": "^4.7.11",
+    "mri": "^1.2.0",
+    "undici": "^7.10.0",
+    "workerpool": "^9.3.2",
+    "zeptologger": "^1.0.2"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.0",
-    "@types/koa": "^2.13.1",
-    "@types/koa-router": "^7.4.1",
-    "@types/needle": "^2.5.1",
-    "@types/node": "~12",
-    "@types/workerpool": "^6.0.0",
-    "typescript": "~4"
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "~20.17.58",
+    "@types/workerpool": "^9.0.0",
+    "typescript": "~5.8.3"
   },
   "scripts": {
     "build": "node_modules/typescript/bin/tsc",
-    "start": "/usr/bin/env node dist/main.js"
+    "start": "/usr/bin/env node dist/bcryptServer.js"
   },
-  "bin": "dist/main.js"
+  "bin": "dist/bcryptServer.js"
 }
