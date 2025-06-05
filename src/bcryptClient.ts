@@ -1,3 +1,4 @@
+import { CpuInfo, cpus } from 'node:os';
 import path from 'path';
 import { Agent, Dispatcher, request } from 'undici';
 import workerpool from 'workerpool';
@@ -15,7 +16,7 @@ export class bcryptClient {
 	private _agent: Agent;
 	private _rounds: number;
 
-	public constructor( baseUrl: string, cacert: Undefinedable<Buffer> = undefined, maxConcurrencyFallback: number = 2, rounds: number = 12 ) {
+	public constructor( baseUrl: string, cacert: Undefinedable<Buffer> = undefined, maxConcurrencyFallback: number = -1, rounds: number = 12 ) {
 		this._baseUrl = baseUrl;
 		this._rounds = rounds;
 		const agentOptions: Agent.Options = {
@@ -31,6 +32,10 @@ export class bcryptClient {
 			}
 		};
 		this._agent = new Agent( agentOptions );
+		if( -1 === maxConcurrencyFallback ) {
+			const cores: CpuInfo[] = cpus();
+			maxConcurrencyFallback = Math.ceil( ( ( 0 < cores.length ) ? cores.length : 1 ) / 4 );
+		}
 		if( 0 < maxConcurrencyFallback ) {
 			this._workerPool = workerpool.pool(
 				path.join( __dirname, 'Worker.js' ), {
