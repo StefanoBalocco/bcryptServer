@@ -1,1 +1,2 @@
 **/*.js linguist-detectable=false
+src/bcryptServer.ts linguist-language=TypeScript
