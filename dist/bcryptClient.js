@@ -28,7 +28,7 @@ export default class bcryptClient {
             maxConcurrencyFallback = Math.ceil(((0 < cores.length) ? cores.length : 1) / 4);
         }
         if (0 < maxConcurrencyFallback) {
-            this._workerPool = workerpool.pool(path.join(__dirname, 'Worker.js'), {
+            this._workerPool = workerpool.pool(path.join(import.meta.dirname, 'Worker.js'), {
                 minWorkers: 0,
                 maxWorkers: maxConcurrencyFallback,
                 workerType: 'thread'
